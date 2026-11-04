@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Casa Repuestos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: mostrador — selector de mes, resumen del mes, ganancia por día, y dos libros (ventas / gastos) con su carga rápida */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#18212b; --muted:#5d6b78; --line:#d5dce3;
+  --accent:#1d5c86; --accent-ink:#ffffff; --good:#1f7a4d; --bad:#b4372b; --warn:#a86a06;
+  --chip:#e3e9ef;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1a2129; --ink:#e4e9ee; --muted:#93a1ae; --line:#2c3640;
+  --accent:#5aa3d6; --accent-ink:#0d1a24; --good:#4fc28a; --bad:#ef7b6f; --warn:#e2a646; --chip:#24303b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1a2129; --ink:#e4e9ee; --muted:#93a1ae; --line:#2c3640;
+  --accent:#5aa3d6; --accent-ink:#0d1a24; --good:#4fc28a; --bad:#ef7b6f; --warn:#e2a646; --chip:#24303b; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:2.1rem;letter-spacing:.01em;margin:0;line-height:1;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.92rem}
+.month{display:flex;align-items:center;gap:6px}
+.month button{width:36px;height:36px}
+.month input{font-family:var(--f-num);font-size:.95rem}
+h2{font-family:var(--f-display);font-weight:700;font-size:1.35rem;margin:0;letter-spacing:.02em;text-transform:uppercase}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* Resumen: cadena de cálculo de izquierda a derecha */
+.calc{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.calc>div{padding:14px 16px;display:grid;gap:4px;border-right:1px solid var(--line);min-width:0}
+.calc>div:last-child{border-right:0;background:var(--accent);color:var(--accent-ink)}
+.calc>div:last-child .label{color:var(--accent-ink);opacity:.85}
+.calc .v{font-family:var(--f-num);font-size:1.25rem;font-weight:600;overflow-wrap:anywhere}
+.calc .op{color:var(--muted);font-size:.8rem}
+.calc>div:last-child .op{color:var(--accent-ink);opacity:.8}
+@media (max-width:820px){.calc{grid-template-columns:repeat(2,minmax(0,1fr))}.calc>div{border-bottom:1px solid var(--line)}.calc>div:last-child{grid-column:1/-1}}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:14px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.chart{overflow-x:auto}
+.chart svg{display:block;min-width:560px;width:100%;height:auto}
+
+.cols{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:980px){.cols{grid-template-columns:minmax(0,1fr)}}
+
+form{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:end;padding:12px;background:var(--chip);border-radius:4px}
+form .f{display:grid;gap:4px;min-width:0}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s6{grid-column:1/-1}
+#gForm{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:620px){form,#gForm{grid-template-columns:repeat(2,minmax(0,1fr))}.s2,.s3{grid-column:span 2}}
+input,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 9px;width:100%;box-sizing:border-box;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.preview{font-size:.85rem;color:var(--muted)}
+.preview b{font-family:var(--f-num);color:var(--ink)}
+
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th{text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+td.num{white-space:nowrap}
+.veh{font-weight:600}
+.veh small{display:block;font-weight:400;color:var(--muted)}
+.pill{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;background:var(--chip);color:var(--muted);white-space:nowrap}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.lowm{color:var(--warn)}
+.del{border:0;background:none;color:var(--muted);padding:2px 6px;font-size:1rem;line-height:1}
+.del:hover{color:var(--bad)}
+.empty{color:var(--muted);text-align:center;padding:22px 8px}
+.status{font-size:.85rem;color:var(--muted)}
+.status.err{color:var(--bad)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{font-family:var(--f-display);font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-decoration:none;padding:8px 14px;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.view{display:grid;gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpis>div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:4px;min-width:0}
+.kpis .v{font-family:var(--f-num);font-size:1.2rem;font-weight:600;overflow-wrap:anywhere}
+.kpis .op{color:var(--muted);font-size:.8rem}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.grid .wide{grid-column:1/-1}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.hb{display:grid;gap:9px}
+.hb .row{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:.88rem}
+.hb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .track{height:12px;background:var(--chip);border-radius:2px;overflow:hidden}
+.hb .bar{height:100%;background:var(--accent);border-radius:2px}
+.hb .bar.g{background:var(--warn)}
+.hb .val{font-family:var(--f-num);font-size:.82rem;text-align:right;white-space:nowrap}
+.hb .val small{color:var(--muted);margin-left:4px}
+.legend{display:flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.sw.a{background:var(--accent)}.sw.n{background:var(--good)}
+.hdr-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+
+/* Cierre del día: hoja tipo planilla de caja sobre un velo */
+.veil{position:fixed;inset:0;z-index:20;background:rgba(10,16,22,.55);overflow-y:auto;
+  padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.sheet{max-width:820px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;display:grid;gap:16px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.sheet-head .d{display:flex;align-items:center;gap:8px}
+.day-sum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.day-sum>div{padding:10px 12px;display:grid;gap:2px;border-right:1px solid var(--line);min-width:0}
+.day-sum>div:last-child{border-right:0;background:var(--accent);color:var(--accent-ink)}
+.day-sum>div:last-child .label{color:var(--accent-ink);opacity:.85}
+.day-sum .v{font-family:var(--f-num);font-weight:600;overflow-wrap:anywhere}
+@media (max-width:620px){.day-sum{grid-template-columns:repeat(2,minmax(0,1fr))}.day-sum>div{border-bottom:1px solid var(--line)}.day-sum>div:last-child{grid-column:1/-1}}
+.pagos{display:flex;flex-wrap:wrap;gap:8px}
+.pagos span{background:var(--chip);border-radius:4px;padding:6px 10px;font-size:.88rem}
+.pagos b{font-family:var(--f-num);margin-left:6px}
+.sheet h3{font-family:var(--f-display);font-size:1.1rem;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.sheet-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.note-ok{color:var(--good);font-size:.85rem}
+.note-err{color:var(--bad);font-size:.85rem}
+</style>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Casa Repuestos</h1>
+      <p class="sub">Ventas del día a día, costo de cada repuesto y gastos del local. Ganancia neta del mes.</p>
+    </div>
+    <div class="hdr-actions">
+      <button class="primary" id="cierreBtn">Cierre del día</button>
+      <div class="month">
+        <button id="prevM" aria-label="Mes anterior">‹</button>
+        <input id="mes" type="month" aria-label="Mes">
+        <button id="nextM" aria-label="Mes siguiente">›</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones">
+    <a href="#caja" id="tCaja" class="tab">Caja</a>
+    <a href="#analisis" id="tAna" class="tab">Análisis</a>
+  </nav>
+
+  <p id="status" class="status">Cargando datos…</p>
+
+  <div id="vCaja" class="view">
+  <section class="calc" aria-label="Resumen del mes">
+    <div><span class="label">Ventas</span><span class="v" id="kVentas">–</span><span class="op" id="kOps">0 operaciones</span></div>
+    <div><span class="label">Costo repuestos</span><span class="v" id="kCosto">–</span><span class="op">− lo que pagaste al proveedor</span></div>
+    <div><span class="label">Ganancia bruta</span><span class="v" id="kBruta">–</span><span class="op" id="kMargen">margen –</span></div>
+    <div><span class="label">Gastos del local</span><span class="v" id="kGastos">–</span><span class="op">− alquiler, luz, sueldos…</span></div>
+    <div><span class="label">Ganancia neta</span><span class="v" id="kNeta">–</span><span class="op" id="kNetaPct">sobre ventas –</span></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel">
+      <div class="panel-head"><h2>Ventas</h2><span class="label" id="vCount"></span></div>
+      <form id="vForm" autocomplete="off">
+        <div class="f"><label class="label" for="vFecha">Fecha</label><input id="vFecha" type="date" required></div>
+        <div class="f s2"><label class="label" for="vVeh">Vehículo</label><input id="vVeh" placeholder="VW Gol" required></div>
+        <div class="f"><label class="label" for="vMod">Modelo / año</label><input id="vMod" placeholder="Power 1.6 2008"></div>
+        <div class="f s2"><label class="label" for="vRep">Repuesto</label><input id="vRep" placeholder="Kit de distribución" required></div>
+        <div class="f"><label class="label" for="vCant">Cant.</label><input id="vCant" type="number" min="1" step="1" value="1" required></div>
+        <div class="f"><label class="label" for="vCosto">Costo unit. $</label><input id="vCosto" type="number" min="0" step="0.01" required></div>
+        <div class="f"><label class="label" for="vPrecio">Venta unit. $</label><input id="vPrecio" type="number" min="0" step="0.01" required></div>
+        <div class="f"><label class="label" for="vPago">Pago</label>
+          <select id="vPago"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Cuenta corriente</option></select></div>
+        <div class="f s2"><label class="label" for="vNota">Nota</label><input id="vNota" placeholder="Cliente, taller, garantía…"></div>
+        <div class="f s3 preview" id="vPrev">Ganancia de esta venta: <b>–</b></div>
+        <div class="f s3" style="justify-items:end"><button class="primary" type="submit" id="vBtn">Agregar venta</button></div>
+      </form>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Día</th><th>Vehículo</th><th>Repuesto</th><th class="r">Cant.</th><th class="r">Costo</th><th class="r">Venta</th><th class="r">Ganancia</th><th></th></tr></thead>
+          <tbody id="vBody"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Gastos del mes</h2><span class="label" id="gCount"></span></div>
+      <form id="gForm" autocomplete="off">
+        <div class="f s2"><label class="label" for="gFecha">Fecha</label><input id="gFecha" type="date" required></div>
+        <div class="f s2"><label class="label" for="gCat">Tipo</label>
+          <select id="gCat"><option>Alquiler</option><option>Sueldos</option><option>Servicios</option><option>Impuestos</option><option>Comisiones tarjeta</option><option>Flete</option><option>Otros</option></select></div>
+        <div class="f s2"><label class="label" for="gDesc">Detalle</label><input id="gDesc" placeholder="Luz noviembre"></div>
+        <div class="f"><label class="label" for="gMonto">Monto $</label><input id="gMonto" type="number" min="0" step="0.01" required></div>
+        <div class="f" style="justify-items:end"><button class="primary" type="submit" id="gBtn">Agregar</button></div>
+      </form>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Día</th><th>Tipo</th><th>Detalle</th><th class="r">Monto</th><th></th></tr></thead>
+          <tbody id="gBody"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  </div>
+
+  <div id="vAna" class="view" hidden>
+    <section class="kpis" aria-label="Indicadores del mes">
+      <div><span class="label">Ticket promedio</span><span class="v" id="aTicket">–</span><span class="op">por operación</span></div>
+      <div><span class="label">Margen promedio</span><span class="v" id="aMargen">–</span><span class="op">ganancia sobre venta</span></div>
+      <div><span class="label">Venta por día</span><span class="v" id="aDia">–</span><span class="op" id="aDiaOp">días con ventas</span></div>
+      <div><span class="label">Neta proyectada</span><span class="v" id="aProy">–</span><span class="op">estimado a fin de mes</span></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel wide">
+        <div class="panel-head"><h2>Ganancia bruta por día</h2><span class="label" id="chartNote"></span></div>
+        <div class="chart" id="chart"></div>
+      </section>
+      <section class="panel wide">
+        <div class="panel-head"><h2>Ganancia neta acumulada</h2><span class="label">bruta acumulada − gastos</span></div>
+        <div class="chart" id="chAcum"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Repuestos que más dejan</h2><span class="label">ganancia</span></div>
+        <div class="hb" id="chRep"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Marcas más atendidas</h2><span class="label">ventas</span></div>
+        <div class="hb" id="chVeh"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Medios de pago</h2><span class="label">cobrado</span></div>
+        <div class="hb" id="chPago"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Gastos por tipo</h2><span class="label">del mes</span></div>
+        <div class="hb" id="chGas"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Día de la semana</h2><span class="label">ganancia promedio</span></div>
+        <div class="hb" id="chSem"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Últimos 6 meses</h2><span class="label legend"><i class="sw a"></i>Ventas <i class="sw n"></i>Neta</span></div>
+        <div class="chart" id="chMeses"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="veil" id="cierre" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cierreTit">
+    <div class="sheet-head">
+      <h2 id="cierreTit">Cierre del día</h2>
+      <div class="d">
+        <label class="label" for="cDia">Día</label>
+        <input id="cDia" type="date">
+        <button id="cX" aria-label="Cerrar">×</button>
+      </div>
+    </div>
+    <div class="day-sum">
+      <div><span class="label">Ventas</span><span class="v" id="cVentas">–</span></div>
+      <div><span class="label">Costo</span><span class="v" id="cCosto">–</span></div>
+      <div><span class="label">Ganancia bruta</span><span class="v" id="cBruta">–</span></div>
+      <div><span class="label">Gastos</span><span class="v" id="cGastos">–</span></div>
+      <div><span class="label">Neto del día</span><span class="v" id="cNeta">–</span></div>
+    </div>
+    <div>
+      <span class="label">Cobrado por medio de pago</span>
+      <div class="pagos" id="cPagos"></div>
+    </div>
+    <h3>Ventas del día</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Vehículo</th><th>Repuesto</th><th>Pago</th><th class="r">Cant.</th><th class="r">Costo</th><th class="r">Venta</th><th class="r">Ganancia</th></tr></thead>
+        <tbody id="cVBody"></tbody>
+      </table>
+    </div>
+    <h3>Gastos del día</h3>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Tipo</th><th>Detalle</th><th class="r">Monto</th></tr></thead>
+        <tbody id="cGBody"></tbody>
+      </table>
+    </div>
+    <div class="sheet-actions">
+      <span id="cMsg"></span>
+      <button id="cCopy">Copiar resumen</button>
+      <button class="primary" id="cPdf">Descargar PDF</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const fmt=new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0});
+  const money=n=>fmt.format(Math.round(n||0));
+  const pct=n=>isFinite(n)?(n*100).toFixed(1).replace('.',',')+'%':'–';
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+
+  let ventas=[], gastos=[], db=null, canWrite=true;
+  let mes=today().slice(0,7);
+  $('mes').value=mes; $('vFecha').value=today(); $('gFecha').value=today();
+
+  function shift(k){const [y,m]=mes.split('-').map(Number);const d=new Date(y,m-1+k,1);mes=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');$('mes').value=mes;render()}
+  $('prevM').onclick=()=>shift(-1); $('nextM').onclick=()=>shift(1);
+  $('mes').onchange=e=>{if(e.target.value){mes=e.target.value;render()}};
+
+  function setStatus(t,err){const s=$('status');s.textContent=t||'';s.hidden=!t;s.classList.toggle('err',!!err)}
+
+  function updPrev(){
+    const c=+$('vCosto').value, p=+$('vPrecio').value, q=+$('vCant').value||1;
+    const b=$('vPrev').querySelector('b');
+    if(!$('vCosto').value||!$('vPrecio').value){b.textContent='–';b.className='';return}
+    const g=(p-c)*q; b.textContent=money(g)+(p>0?'  ('+pct((p-c)/p)+')':''); b.className=g<0?'neg':'pos';
+  }
+  ['vCosto','vPrecio','vCant'].forEach(id=>$(id).addEventListener('input',updPrev));
+
+  function render(){
+    const vs=ventas.filter(v=>String(v.fecha).startsWith(mes)).sort((a,b)=>a.fecha<b.fecha?1:a.fecha>b.fecha?-1:0);
+    const gs=gastos.filter(g=>String(g.fecha).startsWith(mes)).sort((a,b)=>a.fecha<b.fecha?1:-1);
+    let tv=0,tc=0; vs.forEach(v=>{tv+=v.precio*v.cant; tc+=v.costo*v.cant});
+    const tg=gs.reduce((s,g)=>s+(+g.monto||0),0), bruta=tv-tc, neta=bruta-tg;
+    $('kVentas').textContent=money(tv); $('kOps').textContent=vs.length+(vs.length===1?' operación':' operaciones');
+    $('kCosto').textContent=money(tc); $('kBruta').textContent=money(bruta);
+    $('kMargen').textContent='margen '+(tv?pct(bruta/tv):'–');
+    $('kGastos').textContent=money(tg); $('kNeta').textContent=money(neta);
+    $('kNetaPct').textContent='sobre ventas '+(tv?pct(neta/tv):'–');
+    $('vCount').textContent=vs.length?vs.length+' cargadas':''; $('gCount').textContent=gs.length?gs.length+' cargados':'';
+
+    $('vBody').innerHTML=vs.length?vs.map(v=>{
+      const g=(v.precio-v.costo)*v.cant, m=v.precio?(v.precio-v.costo)/v.precio:0;
+      return `<tr><td class="num">${esc(v.fecha.slice(8,10))}</td>
+        <td class="veh">${esc(v.vehiculo)}<small>${esc(v.modelo||'')}</small></td>
+        <td>${esc(v.repuesto)}${v.nota?`<br><span class="pill">${esc(v.nota)}</span>`:''} <span class="pill">${esc(v.pago||'')}</span></td>
+        <td class="r num">${v.cant}</td><td class="r num">${money(v.costo*v.cant)}</td><td class="r num">${money(v.precio*v.cant)}</td>
+        <td class="r num ${g<0?'neg':m<0.15?'lowm':'pos'}">${money(g)}</td>
+        <td>${canWrite?`<button class="del" data-col="ventas" data-id="${esc(v._id)}" aria-label="Borrar venta">×</button>`:''}</td></tr>`}).join('')
+      :`<tr><td colspan="8" class="empty">No hay ventas cargadas en este mes. Usá el formulario de arriba para cargar la primera.</td></tr>`;
+
+    $('gBody').innerHTML=gs.length?gs.map(g=>`<tr><td class="num">${esc(g.fecha.slice(8,10))}</td><td><span class="pill">${esc(g.cat)}</span></td><td>${esc(g.desc||'')}</td><td class="r num">${money(g.monto)}</td>
+      <td>${canWrite?`<button class="del" data-col="gastos" data-id="${esc(g._id)}" aria-label="Borrar gasto">×</button>`:''}</td></tr>`).join('')
+      :`<tr><td colspan="5" class="empty">Sin gastos cargados en este mes.</td></tr>`;
+
+    drawChart(vs);
+    renderAnalisis(vs,gs,tv,tc,tg);
+    if(!$('cierre').hidden) renderCierre();
+  }
+
+  function drawChart(vs){
+    const [y,m]=mes.split('-').map(Number), days=new Date(y,m,0).getDate();
+    const per=Array(days).fill(0); vs.forEach(v=>{const d=+v.fecha.slice(8,10);if(d>=1&&d<=days)per[d-1]+=(v.precio-v.costo)*v.cant});
+    const max=Math.max(...per,0), min=Math.min(...per,0);
+    const W=900,H=210,L=70,R=10,T=14,B=26, iw=W-L-R, ih=H-T-B;
+    if(!max&&!min){$('chart').innerHTML=`<p class="empty">Cuando cargues ventas, acá ves cuánto dejó cada día.</p>`;$('chartNote').textContent='';return}
+    const span=max-min||1, ys=v=>T+(max-v)/span*ih, bw=iw/days;
+    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ganancia bruta por día del mes">`;
+    [max,(max+min)/2,min].forEach(t=>{s+=`<line x1="${L}" x2="${W-R}" y1="${ys(t)}" y2="${ys(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${ys(t)+4}" text-anchor="end" font-size="11" font-family="var(--f-num)" fill="var(--muted)">${money(t)}</text>`});
+    if(min<0) s+=`<line x1="${L}" x2="${W-R}" y1="${ys(0)}" y2="${ys(0)}" stroke="var(--muted)" stroke-width="1"/>`;
+    per.forEach((v,i)=>{ if(!v) return; const x=L+i*bw+bw*.15, y0=ys(0), y1=ys(v);
+      s+=`<rect x="${x}" y="${Math.min(y0,y1)}" width="${bw*.7}" height="${Math.max(1,Math.abs(y1-y0))}" rx="1.5" fill="${v<0?'var(--bad)':'var(--accent)'}"><title>Día ${i+1}: ${money(v)}</title></rect>`});
+    for(let d=1;d<=days;d++) if(d===1||d%5===0) s+=`<text x="${L+(d-.5)*bw}" y="${H-8}" text-anchor="middle" font-size="11" font-family="var(--f-num)" fill="var(--muted)">${d}</text>`;
+    $('chart').innerHTML=s+'</svg>';
+    const best=per.indexOf(max); $('chartNote').textContent=max>0?'Mejor día: '+(best+1)+' · '+money(max):'';
+  }
+
+  document.addEventListener('click',async e=>{
+    const b=e.target.closest('.del'); if(!b||!db) return;
+    if(b.dataset.confirm!=='1'){b.dataset.confirm='1';b.textContent='¿Borrar?';b.style.color='var(--bad)';setTimeout(()=>{if(b.isConnected){b.dataset.confirm='';b.textContent='×';b.style.color=''}},3000);return}
+    b.disabled=true;
+    try{await db.collection(b.dataset.col).doc(b.dataset.id).delete()}catch(err){setStatus('No se pudo borrar. Probá de nuevo.',true);b.disabled=false}
+  });
+
+  $('vForm').addEventListener('submit',async e=>{
+    e.preventDefault(); if(!db) return;
+    const v={fecha:$('vFecha').value,vehiculo:$('vVeh').value.trim(),modelo:$('vMod').value.trim(),repuesto:$('vRep').value.trim(),
+      cant:Math.max(1,parseInt($('vCant').value)||1),costo:+$('vCosto').value||0,precio:+$('vPrecio').value||0,pago:$('vPago').value,nota:$('vNota').value.trim(),creado:Date.now()};
+    $('vBtn').disabled=true;
+    try{await db.collection('ventas').add(v);
+      ['vVeh','vMod','vRep','vCosto','vPrecio','vNota'].forEach(id=>$(id).value='');$('vCant').value=1;updPrev();
+      if(v.fecha.slice(0,7)!==mes){mes=v.fecha.slice(0,7);$('mes').value=mes;render()}
+      $('vVeh').focus();
+    }catch(err){setStatus(err&&err.code==='quota_exceeded'?'Se llenó la base de datos: borrá registros viejos para seguir cargando.':'No se pudo guardar la venta. Revisá la conexión y probá de nuevo.',true)}
+    $('vBtn').disabled=false;
+  });
+
+  $('gForm').addEventListener('submit',async e=>{
+    e.preventDefault(); if(!db) return;
+    const g={fecha:$('gFecha').value,cat:$('gCat').value,desc:$('gDesc').value.trim(),monto:+$('gMonto').value||0,creado:Date.now()};
+    $('gBtn').disabled=true;
+    try{await db.collection('gastos').add(g);$('gDesc').value='';$('gMonto').value='';}
+    catch(err){setStatus('No se pudo guardar el gasto. Probá de nuevo.',true)}
+    $('gBtn').disabled=false;
+  });
+
+  /* ---------- Cierre del día ---------- */
+  let dl=null;
+  function diaData(dia){
+    const vs=ventas.filter(v=>v.fecha===dia).sort((a,b)=>(a.creado||0)-(b.creado||0));
+    const gs=gastos.filter(g=>g.fecha===dia).sort((a,b)=>(a.creado||0)-(b.creado||0));
+    let tv=0,tc=0; const pagos={};
+    vs.forEach(v=>{const t=v.precio*v.cant;tv+=t;tc+=v.costo*v.cant;pagos[v.pago||'Sin dato']=(pagos[v.pago||'Sin dato']||0)+t});
+    const tg=gs.reduce((s,g)=>s+(+g.monto||0),0);
+    return {vs,gs,tv,tc,tg,bruta:tv-tc,neta:tv-tc-tg,pagos};
+  }
+  const diaLargo=d=>{const [y,m,dd]=d.split('-').map(Number);const s=new Date(y,m-1,dd).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1)};
+
+  function renderCierre(){
+    const dia=$('cDia').value; if(!dia) return; const D=diaData(dia);
+    $('cVentas').textContent=money(D.tv);$('cCosto').textContent=money(D.tc);$('cBruta').textContent=money(D.bruta);
+    $('cGastos').textContent=money(D.tg);$('cNeta').textContent=money(D.neta);
+    const ps=Object.entries(D.pagos);
+    $('cPagos').innerHTML=ps.length?ps.map(([k,v])=>`<span>${esc(k)}<b>${money(v)}</b></span>`).join(''):'<span>Sin cobros</span>';
+    $('cVBody').innerHTML=D.vs.length?D.vs.map(v=>{const g=(v.precio-v.costo)*v.cant;return `<tr><td class="veh">${esc(v.vehiculo)}<small>${esc(v.modelo||'')}</small></td><td>${esc(v.repuesto)}${v.nota?`<br><span class="pill">${esc(v.nota)}</span>`:''}</td><td>${esc(v.pago||'')}</td><td class="r num">${v.cant}</td><td class="r num">${money(v.costo*v.cant)}</td><td class="r num">${money(v.precio*v.cant)}</td><td class="r num ${g<0?'neg':'pos'}">${money(g)}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">No hay ventas cargadas este día.</td></tr>';
+    $('cGBody').innerHTML=D.gs.length?D.gs.map(g=>`<tr><td><span class="pill">${esc(g.cat)}</span></td><td>${esc(g.desc||'')}</td><td class="r num">${money(g.monto)}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">Sin gastos este día.</td></tr>';
+  }
+  function msg(t,ok){$('cMsg').textContent=t;$('cMsg').className=ok?'note-ok':'note-err'}
+
+  $('cierreBtn').onclick=async()=>{
+    $('cDia').value=today(); msg('',true); renderCierre(); $('cierre').hidden=false; $('cX').focus();
+    if(!dl){dl={save:async({filename,data})=>{const u=URL.createObjectURL(data);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return {status:'saved'}}}}
+  };
+  const cerrar=()=>{$('cierre').hidden=true;$('cierreBtn').focus()};
+  $('cX').onclick=cerrar;
+  $('cierre').addEventListener('click',e=>{if(e.target.id==='cierre')cerrar()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('cierre').hidden)cerrar()});
+  $('cDia').onchange=()=>{msg('',true);renderCierre()};
+
+  function textoResumen(dia,D){
+    let t=`CIERRE ${diaLargo(dia)}\n\nVentas: ${money(D.tv)} (${D.vs.length} op.)\nCosto: ${money(D.tc)}\nGanancia bruta: ${money(D.bruta)}\nGastos: ${money(D.tg)}\nNETO DEL DÍA: ${money(D.neta)}\n`;
+    const ps=Object.entries(D.pagos); if(ps.length) t+='\nCobrado:\n'+ps.map(([k,v])=>`- ${k}: ${money(v)}`).join('\n')+'\n';
+    if(D.vs.length) t+='\nVentas:\n'+D.vs.map(v=>`- ${v.vehiculo}${v.modelo?' '+v.modelo:''} | ${v.repuesto} x${v.cant} | ${money(v.precio*v.cant)} (gan. ${money((v.precio-v.costo)*v.cant)})`).join('\n')+'\n';
+    if(D.gs.length) t+='\nGastos:\n'+D.gs.map(g=>`- ${g.cat}${g.desc?': '+g.desc:''} | ${money(g.monto)}`).join('\n')+'\n';
+    return t;
+  }
+  $('cCopy').onclick=async()=>{
+    const dia=$('cDia').value, t=textoResumen(dia,diaData(dia));
+    try{await navigator.clipboard.writeText(t);msg('Resumen copiado. Lo podés pegar en WhatsApp.',true)}
+    catch(_){msg('No se pudo copiar automáticamente en esta vista.',false)}
+  };
+
+  $('cPdf').onclick=async()=>{
+    const dia=$('cDia').value, D=diaData(dia);
+    if(!window.jspdf){msg('No se pudo cargar el generador de PDF. Recargá la página.',false);return}
+    const P=s=>String(s??'').replace(/−/g,'-').replace(/ /g,' ');
+    const m=n=>P(money(n));
+    const doc=new window.jspdf.jsPDF({unit:'pt',format:'a4'});
+    const W=doc.internal.pageSize.getWidth(), X=40;
+    doc.setFillColor(29,92,134);doc.rect(0,0,W,64,'F');
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('Cierre del día',X,30);
+    doc.setFont('helvetica','normal');doc.setFontSize(11);doc.text(P(diaLargo(dia)),X,48);
+    doc.setTextColor(24,33,43);
+    let y=92; const cols=[['Ventas',D.tv],['Costo',D.tc],['Ganancia bruta',D.bruta],['Gastos',D.tg],['Neto del día',D.neta]];
+    const cw=(W-2*X)/5;
+    cols.forEach(([k,v],i)=>{const x=X+i*cw; if(i===4){doc.setFillColor(29,92,134);doc.rect(x,y-14,cw,40,'F');doc.setTextColor(255,255,255)}else{doc.setDrawColor(213,220,227);doc.rect(x,y-14,cw,40)}
+      doc.setFontSize(8);doc.text(k.toUpperCase(),x+8,y);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text(m(v),x+8,y+17);doc.setFont('helvetica','normal');doc.setTextColor(24,33,43)});
+    y+=46; doc.setFontSize(9);doc.setTextColor(93,107,120);
+    const ps=Object.entries(D.pagos); doc.text(P('Cobrado: '+(ps.length?ps.map(([k,v])=>k+' '+money(v)).join('  ·  '):'sin cobros')),X,y,{maxWidth:W-2*X});
+    doc.setTextColor(24,33,43); y+=22;
+    const head={fillColor:[227,233,239],textColor:[24,33,43],fontStyle:'bold',fontSize:8};
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('Ventas',X,y);doc.setFont('helvetica','normal');
+    doc.autoTable({startY:y+6,margin:{left:X,right:X},styles:{fontSize:8.5,cellPadding:4},headStyles:head,
+      head:[['Vehículo','Modelo','Repuesto','Pago','Cant.','Costo','Venta','Ganancia']],
+      body:D.vs.length?D.vs.map(v=>[P(v.vehiculo),P(v.modelo),P(v.repuesto+(v.nota?' ('+v.nota+')':'')),P(v.pago),v.cant,m(v.costo*v.cant),m(v.precio*v.cant),m((v.precio-v.costo)*v.cant)]):[[{content:'Sin ventas este día',colSpan:8}]],
+      foot:D.vs.length?[['','','','','Total',m(D.tc),m(D.tv),m(D.bruta)]]:undefined,footStyles:head,
+      columnStyles:{4:{halign:'right'},5:{halign:'right'},6:{halign:'right'},7:{halign:'right'}}});
+    y=doc.lastAutoTable.finalY+24;
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('Gastos',X,y);doc.setFont('helvetica','normal');
+    doc.autoTable({startY:y+6,margin:{left:X,right:X},styles:{fontSize:8.5,cellPadding:4},headStyles:head,
+      head:[['Tipo','Detalle','Monto']],
+      body:D.gs.length?D.gs.map(g=>[P(g.cat),P(g.desc),m(g.monto)]):[[{content:'Sin gastos este día',colSpan:3}]],
+      foot:D.gs.length?[['','Total',m(D.tg)]]:undefined,footStyles:head,columnStyles:{2:{halign:'right'}}});
+    doc.setFontSize(8);doc.setTextColor(93,107,120);
+    doc.text(P('Generado el '+new Date().toLocaleString('es-AR')+' · Casa Repuestos'),X,doc.internal.pageSize.getHeight()-24);
+    try{ $('cPdf').disabled=true;
+      await dl.save({filename:'cierre-'+dia+'.pdf',data:doc.output('blob')});
+      msg('PDF guardado.',true);
+    }catch(e){ if(e&&e.code==='declined') msg('',true); else if(e&&e.code==='rate_limited') msg('Ya hay una descarga esperando confirmación.',false); else {msg('Las descargas no están disponibles en esta vista. Usá "Copiar resumen".',false);$('cPdf').hidden=true} }
+    $('cPdf').disabled=false;
+  };
+
+  /* ---------- Solapas ---------- */
+  function route(){
+    const ana=location.hash==='#analisis';
+    $('vCaja').hidden=ana; $('vAna').hidden=!ana;
+    $('tCaja').toggleAttribute('aria-current',!ana); $('tAna').toggleAttribute('aria-current',ana);
+    if(!ana) $('tCaja').setAttribute('aria-current','page'); else $('tAna').setAttribute('aria-current','page');
+  }
+  window.addEventListener('hashchange',route); route();
+
+  /* ---------- Análisis ---------- */
+  const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  function hbars(el,rows,opts={}){
+    if(!rows.length){$(el).innerHTML=`<p class="empty">${opts.empty||'Sin datos este mes.'}</p>`;return}
+    const max=Math.max(...rows.map(r=>Math.abs(r[1])),1), tot=rows.reduce((a,r)=>a+r[1],0);
+    $(el).innerHTML=rows.map(([k,v,extra])=>`<div class="row"><span class="nm" title="${esc(k)}">${esc(k)}</span>
+      <span class="track"><span class="bar${opts.cls?' '+opts.cls:''}" style="width:${Math.max(2,Math.abs(v)/max*100)}%;${v<0?'background:var(--bad)':''}"></span></span>
+      <span class="val">${money(v)}${opts.pct&&tot?`<small>${pct(v/tot)}</small>`:''}${extra?`<small>${esc(extra)}</small>`:''}</span></div>`).join('');
+  }
+  function group(arr,keyFn,valFn){const m={};arr.forEach(x=>{const k=keyFn(x);m[k]=(m[k]||0)+valFn(x)});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+
+  function renderAnalisis(vs,gs,tv,tc,tg){
+    const bruta=tv-tc, [y,mo]=mes.split('-').map(Number), days=new Date(y,mo,0).getDate();
+    const diasCon=new Set(vs.map(v=>v.fecha)).size;
+    $('aTicket').textContent=vs.length?money(tv/vs.length):'–';
+    $('aMargen').textContent=tv?pct(bruta/tv):'–';
+    $('aDia').textContent=diasCon?money(tv/diasCon):'–';
+    $('aDiaOp').textContent=diasCon+(diasCon===1?' día con ventas':' días con ventas');
+    // proyección: ritmo de ganancia bruta por día transcurrido, menos gastos cargados
+    const hoy=today(), mesHoy=hoy.slice(0,7);
+    const trans=mes<mesHoy?days:mes===mesHoy?+hoy.slice(8,10):0;
+    $('aProy').textContent=trans?money(bruta/trans*days-tg):'–';
+
+    // Acumulado
+    const pb=Array(days).fill(0), pg=Array(days).fill(0);
+    vs.forEach(v=>{const d=+v.fecha.slice(8,10);if(d>=1&&d<=days)pb[d-1]+=(v.precio-v.costo)*v.cant});
+    gs.forEach(g=>{const d=+g.fecha.slice(8,10);if(d>=1&&d<=days)pg[d-1]+=(+g.monto||0)});
+    const lim=trans||days; let acc=0; const ac=[];
+    for(let i=0;i<lim;i++){acc+=pb[i]-pg[i];ac.push(acc)}
+    lineChart('chAcum',ac,days);
+
+    hbars('chRep',group(vs,v=>v.repuesto||'Sin dato',v=>(v.precio-v.costo)*v.cant).slice(0,6));
+    hbars('chVeh',group(vs,v=>(v.vehiculo||'Sin dato').split(' ')[0],v=>v.precio*v.cant).slice(0,6),{pct:true});
+    hbars('chPago',group(vs,v=>v.pago||'Sin dato',v=>v.precio*v.cant),{pct:true});
+    hbars('chGas',group(gs,g=>g.cat||'Otros',g=>+g.monto||0),{cls:'g',pct:true,empty:'Sin gastos cargados este mes.'});
+
+    // Día de la semana: ganancia promedio por día con ventas
+    const sem={}, cnt={};
+    vs.forEach(v=>{const [a,b,c]=v.fecha.split('-').map(Number);const w=new Date(a,b-1,c).getDay();sem[w]=(sem[w]||0)+(v.precio-v.costo)*v.cant;(cnt[w]=cnt[w]||new Set()).add(v.fecha)});
+    hbars('chSem',[1,2,3,4,5,6,0].filter(w=>sem[w]!=null).map(w=>[DIAS[w],sem[w]/cnt[w].size,cnt[w].size+(cnt[w].size===1?' día':' días')]));
+
+    mesesChart();
+  }
+
+  function lineChart(el,ac,days){
+    if(!ac.length||ac.every(v=>v===0)){$(el).innerHTML='<p class="empty">Cuando haya ventas y gastos, acá ves cómo va quedando la neta del mes.</p>';return}
+    const W=900,H=200,L=78,R=14,T=14,B=26,iw=W-L-R,ih=H-T-B;
+    const max=Math.max(...ac,0),min=Math.min(...ac,0),span=max-min||1;
+    const xs=i=>L+(i+.5)/days*iw, ys=v=>T+(max-v)/span*ih;
+    const pts=ac.map((v,i)=>xs(i).toFixed(1)+','+ys(v).toFixed(1)).join(' ');
+    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ganancia neta acumulada del mes">`;
+    [max,min].forEach(t=>s+=`<line x1="${L}" x2="${W-R}" y1="${ys(t)}" y2="${ys(t)}" stroke="var(--line)"/><text x="${L-8}" y="${ys(t)+4}" text-anchor="end" font-size="11" font-family="var(--f-num)" fill="var(--muted)">${money(t)}</text>`);
+    if(min<0&&max>0) s+=`<line x1="${L}" x2="${W-R}" y1="${ys(0)}" y2="${ys(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${L-8}" y="${ys(0)+4}" text-anchor="end" font-size="11" font-family="var(--f-num)" fill="var(--muted)">$ 0</text>`;
+    s+=`<polygon points="${xs(0)},${ys(0)} ${pts} ${xs(ac.length-1)},${ys(0)}" fill="var(--accent)" opacity=".12"/>`;
+    s+=`<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>`;
+    const last=ac[ac.length-1]; s+=`<circle cx="${xs(ac.length-1)}" cy="${ys(last)}" r="4.5" fill="${last<0?'var(--bad)':'var(--accent)'}"/>`;
+    for(let d=1;d<=days;d++) if(d===1||d%5===0) s+=`<text x="${xs(d-1)}" y="${H-8}" text-anchor="middle" font-size="11" font-family="var(--f-num)" fill="var(--muted)">${d}</text>`;
+    $(el).innerHTML=s+'</svg>';
+  }
+
+  function mesesChart(){
+    const [y,mo]=mes.split('-').map(Number), ms=[];
+    for(let k=5;k>=0;k--){const d=new Date(y,mo-1-k,1);ms.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}
+    const data=ms.map(m=>{let tv=0,tc=0;ventas.forEach(v=>{if(String(v.fecha).startsWith(m)){tv+=v.precio*v.cant;tc+=v.costo*v.cant}});
+      const tg=gastos.reduce((a,g)=>String(g.fecha).startsWith(m)?a+(+g.monto||0):a,0);return {m,tv,neta:tv-tc-tg}});
+    if(data.every(d=>!d.tv&&!d.neta)){$('chMeses').innerHTML='<p class="empty">Todavía no hay meses con datos.</p>';return}
+    const W=440,H=210,L=70,R=8,T=12,B=26,iw=W-L-R,ih=H-T-B;
+    const max=Math.max(...data.map(d=>Math.max(d.tv,d.neta)),0),min=Math.min(...data.map(d=>d.neta),0),span=max-min||1,ys=v=>T+(max-v)/span*ih,gw=iw/6;
+    let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventas y neta de los últimos 6 meses" style="min-width:0">`;
+    [max,min<0?min:null,0].filter(v=>v!=null).forEach(t=>s+=`<line x1="${L}" x2="${W-R}" y1="${ys(t)}" y2="${ys(t)}" stroke="var(--line)"/><text x="${L-6}" y="${ys(t)+4}" text-anchor="end" font-size="10" font-family="var(--f-num)" fill="var(--muted)">${money(t)}</text>`);
+    data.forEach((d,i)=>{const x=L+i*gw+gw*.14,bw=gw*.34;
+      [[d.tv,'var(--accent)',0],[d.neta,d.neta<0?'var(--bad)':'var(--good)',1]].forEach(([v,c,j])=>{if(!v)return;const y0=ys(0),y1=ys(v);s+=`<rect x="${x+j*bw}" y="${Math.min(y0,y1)}" width="${bw-2}" height="${Math.max(1,Math.abs(y1-y0))}" rx="1.5" fill="${c}"><title>${money(v)}</title></rect>`});
+      const [yy,mm]=d.m.split('-').map(Number);const lb=new Date(yy,mm-1,1).toLocaleDateString('es-AR',{month:'short'}).replace('.','');
+      s+=`<text x="${L+i*gw+gw/2}" y="${H-8}" text-anchor="middle" font-size="11" font-family="var(--f-num)" fill="${d.m===mes?'var(--ink)':'var(--muted)'}" font-weight="${d.m===mes?600:400}">${lb}</text>`});
+    $('chMeses').innerHTML=s+'</svg>';
+  }
+
+  render();
+
+  /* Versión web: los datos se guardan en este navegador (localStorage) */
+  (function(){
+    const KEY='cajaRepuestos.v1', subs={ventas:[],gastos:[]};
+    const EJ={ventas:{ej1:{fecha:'2026-11-02',vehiculo:'VW Gol',modelo:'Power 1.6 2008',repuesto:'Kit de distribución',cant:1,costo:58000,precio:85000,pago:'Efectivo',nota:'Ejemplo',creado:1},
+      ej2:{fecha:'2026-11-02',vehiculo:'Ford Ka',modelo:'1.5 2019',repuesto:'Pastillas de freno del.',cant:1,costo:24000,precio:36000,pago:'Débito',nota:'Ejemplo',creado:2},
+      ej3:{fecha:'2026-11-03',vehiculo:'Chevrolet Corsa',modelo:'1.6 2010',repuesto:'Bujías',cant:4,costo:4500,precio:6800,pago:'Transferencia',nota:'Ejemplo',creado:3},
+      ej4:{fecha:'2026-11-03',vehiculo:'Fiat Palio',modelo:'1.4 2014',repuesto:'Filtro de aceite',cant:2,costo:6200,precio:6900,pago:'Efectivo',nota:'Ejemplo · taller',creado:4}},
+      gastos:{ej1:{fecha:'2026-11-01',cat:'Alquiler',desc:'Ejemplo · local noviembre',monto:250000,creado:1},
+      ej2:{fecha:'2026-11-03',cat:'Servicios',desc:'Ejemplo · luz',monto:38000,creado:2}}};
+    let st; try{st=JSON.parse(localStorage.getItem(KEY))}catch(_){st=null}
+    if(!st||!st.ventas) st=JSON.parse(JSON.stringify(EJ));
+    let persist=true;
+    const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(_){if(persist){persist=false;setStatus('Este navegador no permite guardar: lo que cargues se pierde al cerrar la página.',true)}}};
+    const snap=c=>({docs:Object.entries(st[c]).map(([id,d])=>({id,data:()=>d})),metadata:{fromCache:false}});
+    const emit=c=>subs[c].forEach(f=>f(snap(c)));
+    db={collection:c=>({
+      add:async d=>{const id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);st[c][id]=d;save();emit(c);return {id}},
+      doc:id=>({delete:async()=>{delete st[c][id];save();emit(c)}}),
+      onSnapshot:f=>{subs[c].push(f);f(snap(c));return ()=>{}}
+    })};
+    save(); setStatus('');
+    db.collection('ventas').onSnapshot(s=>{ventas=s.docs.map(d=>({...d.data(),_id:d.id}));render()});
+    db.collection('gastos').onSnapshot(s=>{gastos=s.docs.map(d=>({...d.data(),_id:d.id}));render()});
+    window.addEventListener('storage',e=>{if(e.key===KEY){try{st=JSON.parse(e.newValue)||st}catch(_){} emit('ventas');emit('gastos')}});
+  })();
+})();
+</script>
+
+</body>
+</html>
